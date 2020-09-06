@@ -1,0 +1,16 @@
+version: 2.1
+commands:
+  sync:
+    description: "s3 sync の簡単なカプセル化"
+    parameters:
+      from:
+        type: string
+      to:
+        type: string
+      overwrite:
+        default: false
+        type: boolean
+    steps:
+      - run:
+          name: S3 へのデプロイ
+          command: aws s3 sync << parameters.from >> << parameters.to >> << parameters.overwrite >> --delete<</ parameters.overwrite >>"
