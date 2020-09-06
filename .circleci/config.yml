@@ -1,16 +1,18 @@
 version: 2.1
-commands:
-  sync:
-    description: "s3 sync の簡単なカプセル化"
-    parameters:
-      from:
-        type: string
-      to:
-        type: string
-      overwrite:
-        default: false
-        type: boolean
+orbs:
+  aws-cli: circleci/aws-cli@0.1.2
+  aws-s3: circleci/aws-s3@1.0.0
+jobs:
+  build:
+    executor: aws-cli/default
     steps:
-      - run:
-          name: S3 へのデプロイ
-          command: aws s3 sync << parameters.from >> << parameters.to >> << parameters.overwrite >> --delete<</ parameters.overwrite >>"
+      - checkout
+      - run: mkdir bucket && echo "lorum ipsum" > bucket/build_asset.txt
+      - aws-s3/sync:
+          from: bucket
+          to: "s3://my-s3-bucket-name/prefix"
+          overwrite: true
+      - aws-s3/copy:
+          from: bucket/build_asset.txt
+          to: "s3://my-s3-bucket-name"
+          arguments: --dryrun
