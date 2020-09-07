@@ -1,25 +1,16 @@
-version: 2.1
+version: 2
 jobs:
-  myjob:
-    parameters:
-      preinstall-foo:
-        type: boolean
-        default: false
-    machine: true
+  build:
+    working_directory: ~/mern-starter
+    docker:
+      - image: circleci/node:4.8.4-jessie
+      - image: mongo:3.4.4-jessie
     steps:
-      - run: echo "preinstall is << parameters.preinstall-foo >>"
-      - when:
-          condition: << parameters.preinstall-foo >>
-          steps:
-            - run: echo "preinstall"
-      - unless:
-          condition: << parameters.preinstall-foo >>
-          steps:
-            - run: echo "don't preinstall"
-workflows:
-  workflow:
-    jobs:
-      - myjob:
-          preinstall-foo: false
-      - myjob:
-          preinstall-foo: true
+      - checkout
+      - run:
+          name: npm の更新
+          command: 'sudo npm install -g npm@latest'
+      - restore_cache:
+          key: dependency-cache-{{ checksum "package-lock.json" }}
+          paths:
+            - node_modules
