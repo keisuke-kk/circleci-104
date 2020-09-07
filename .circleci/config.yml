@@ -1,20 +1,25 @@
 version: 2.1
-executors:
-  python:
-    docker:
-      - image: python:3.7.0
-      - image: rabbitmq:3.6-management-alpine
-    environment:
-      ENV: ci
-      TESTS: all
-    shell: /bin/bash
-    working_directory: ~/project
 jobs:
-  build:
-    docker:
-      - image: python:2.7.15
-      - image: postgres:9.6
-    executor: python
-    environment:
-      TESTS: unit
-    working_directory: ~/tests
+  myjob:
+    parameters:
+      preinstall-foo:
+        type: boolean
+        default: false
+    machine: true
+    steps:
+      - run: echo "preinstall is << parameters.preinstall-foo >>"
+      - when:
+          condition: << parameters.preinstall-foo >>
+          steps:
+            - run: echo "preinstall"
+      - unless:
+          condition: << parameters.preinstall-foo >>
+          steps:
+            - run: echo "don't preinstall"
+workflows:
+  workflow:
+    jobs:
+      - myjob:
+          preinstall-foo: false
+      - myjob:
+          preinstall-foo: true
