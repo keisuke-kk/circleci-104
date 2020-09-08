@@ -1,51 +1,40 @@
 version: 2
 jobs:
   build:
-    working_directory: ~/mern-starter
+    working_directory: ~/circleci-demo-ruby-rails
     docker:
-      - image: circleci/node:4.8.2-jessie
-      - image: mongo:3.4.4-jessie
+      - image: circleci/ruby:2.4.1-node
+          environment:
+            RAILS_ENV: test
+            PGHOST: 127.0.0.1
+            PGUSER: root
+      - image: circleci/postgres:9.6.2-alpine
+          environment:
+            POSTGRES_USER: root
+            POSTGRES_DB: circle-test_test
     steps:
       - checkout
-      - run:
-          name: npm の更新
-          command: 'sudo npm install -g npm@latest'
       - restore_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          keys:
+            - rails-demo-{{ checksum "Gemfile.lock" }}
+            - rails-demo-
       - run:
-          name: npm wee のインストール
-          command: npm install
+          name: 依存関係のインストール
+          command: bundle check --path=vendor/bundle || bundle install --path=vendor/bundle --jobs 4 --retry 3
+      - run: sudo apt install -y postgresql-client || true
       - save_cache:
-          key: dependency-cache-{{ checksum "package-lock.json" }}
+          key: rails-demo-{{ checksum "Gemfile.lock" }}
           paths:
-            - node_modules
-  test:
-    docker:
-      - image: circleci/node:4.8.2-jessie
-      - image: mongo:3.4.4-jessie
-    steps:
-      - checkout
+            - vendor/bundle
       - run:
-          name: テスト
-          command: npm test
+          name: データベースのセットアップ
+          command: |
+            bundle exec rake db:create
+            bundle exec rake db:structure:load
       - run:
-          name: コード カバレッジの生成
-          command: './node_modules/.bin/nyc report --reporter=text-lcov'
-      - store_artifacts:
-          path: test-results.xml
-          prefix: tests
-      - store_artifacts:
-          path: coverage
-          prefix: coverage
-          
-workflows:
-  version: 2
-  build_and_test:
-    jobs:
-      - build
-      - test:
-          requires:
-            - build
-          filters:
-            branches:
-              only: master
+          name: RSpec の並列実行
+          command: bin/rails test
+      - store_test_results:
+          path: /tmp/test-results
+            
+            
